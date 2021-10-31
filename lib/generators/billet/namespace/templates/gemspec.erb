@@ -15,5 +15,5 @@ Gem::Specification.new do |s|
 
   s.files = Dir["{app,config,db,lib}/**/*", "Rakefile", "README.rdoc"]
 
-  s.add_dependency "rails", "~> 7.0.0.alpha2", '>= 7.0.0'
+  s.add_dependency "rails", "~> <%= Rails::VERSION::STRING %>", '>= <%= Rails::VERSION::MAJOR %>.<%= Rails::VERSION::MINOR %>'
 end
