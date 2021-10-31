@@ -13,11 +13,9 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/cimon-io/billet"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 
-  spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
-
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/cimon-io/billet"
-  spec.metadata["changelog_uri"] = "https://github.com/cimon-io/billet/commits"
+  spec.metadata["source_code_uri"] = "https://github.com/cimon-io/billet_core"
+  spec.metadata["changelog_uri"] = "https://github.com/cimon-io/billet-core/commits"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
