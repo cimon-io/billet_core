@@ -4,28 +4,29 @@ module Billet
   class NamespaceGenerator < Rails::Generators::NamedBase
     source_root File.expand_path('templates', __dir__)
 
-    class_option :api, type: 'string', default: false, desc: 'Make namespace as API'
+    class_option :kind, type: 'string', default: 'views', desc: 'Make namespace as API/views/GRAPHQL'
     class_option :route, type: 'string', default: nil, desc: 'Make namespace with public access [default module_name]'
     class_option :access, type: 'string', default: 'cancan', desc: 'Make namespace with public access [fake, cancan none]'
-    class_option :begin_chain, type: 'string', default: 'current_company', desc: 'Make namespace with public access. \'false\' if no chain beginning.'
+    class_option :chain, type: 'string', default: 'current_company', desc: 'Make namespace with public access. \'false\' if no chain beginning.'
 
     def initialize(*args, &block)
       super
 
-      @api = case options.api
-            when 'true', 't', '1', 'yes', 'True', 'TRUE', true then true
-            else false
-            end
+      @kind = case options.kind.downcase
+            when 'api' then 'api'
+            when 'graphql' then 'graphql'
+            when 'crud' then 'crud'
+            else 'views'
+            end.inquiry
 
       @access = case options.access
-                when 'cancan', 'can' then 'cancan'
+                when 'cancancan', 'cancan', 'can' then 'cancan'
                 when 'http' then 'http'
-                when 'fakecancan', 'fake' then 'fake'
-                when 'none', 'false', 'all' then 'none'
-                else 'none'
+                when 'none', 'false', 'all', 'public' then 'none'
+                else options.access
                 end.inquiry
 
-      @begin_chain = options.begin_chain == 'false' ? nil : options.begin_chain
+      @chain = %w[false none nil blank].include?(options.chain) ? nil : options.chain
       @route = options.route.nil? ? singular_name : options.route
     end
 
@@ -57,41 +58,44 @@ module Billet
     end
 
     def generate_ability
-      template 'abilities/ability.rb.erb', app_folder(:app, :abilities, singular_name, "ability.rb")
+      if @access.cancan?
+        template 'abilities/ability.rb.erb', app_folder(:app, :abilities, singular_name, "ability.rb")
+      end
     end
 
     def generate_controllers
-      template 'controllers/controller.rb.erb', app_folder(:app, :controllers, "#{instance_name}_controller.rb")
-      template 'controllers/application_controller.rb.erb', app_folder(:app, :controllers, instance_name, "application_controller.rb")
-      template 'controllers/home_controller.rb.erb', app_folder(:app, :controllers, instance_name, "home_controller.rb")
-
       template 'controller_concerns/.keep', app_folder(:app, :controllers, :concerns, ".keep")
 
-      if @api
+      if @kind.api?
         template 'controller_concerns/api_current_identity.rb.erb', app_folder(:app, :controllers, :concerns, instance_name, "current_identity.rb")
+      elsif @kind.crud?
       end
 
       if @access.cancan?
         template 'controller_concerns/current_identity.rb.erb', app_folder(:app, :controllers, :concerns, instance_name, "current_identity.rb")
       end
 
-      true
+      template 'controllers/crud_controllers/controller.rb.erb', app_folder(:app, :controllers, "#{instance_name}_controller.rb")
+      template 'controllers/crud_controllers/application_controller.rb.erb', app_folder(:app, :controllers, instance_name, "application_controller.rb")
+      template 'controllers/crud_controllers/home_controller.rb.erb', app_folder(:app, :controllers, instance_name, "home_controller.rb")
     end
 
     def generate_views
-      if @api
-        directory 'api_views', app_folder(:app, :views, instance_name)
-      else
-        directory 'views/application', app_folder(:app, :views, instance_name, :application)
-        template 'views/home/index.html.haml.erb', app_folder(:app, :views, instance_name, :home, "index.html.haml")
-        template 'views/layouts/application.html.haml.erb', app_folder(:app, :views, :layouts, instance_name, "application.html.haml")
+      case @kind
+      when 'api'
+        directory 'views/api_views', app_folder(:app, :views, instance_name)
+      when 'crud'
+        directory 'views/crud_views/application', app_folder(:app, :views, instance_name, :application)
+        template 'views/crud_views/home/index.html.haml.erb', app_folder(:app, :views, instance_name, :home, "index.html.haml")
+        template 'views/crud_views/layouts/application.html.haml.erb', app_folder(:app, :views, :layouts, instance_name, "application.html.haml")
       end
     end
 
     def generate_routes
-      if @api
+      case @kind
+      when 'api'
         template 'config/api_routes.rb.erb', app_folder(:config, "routes.rb")
-      else
+      when 'views'
         template 'config/routes.rb.erb', app_folder(:config, "routes.rb")
       end
     end
